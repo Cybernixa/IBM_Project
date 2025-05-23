@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-bs-theme="dark"> <!-- Added data-bs-theme="dark" for Bootstrap's dark mode -->
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,15 +10,12 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
     <!-- Custom CSS - Use url_for for Flask static files -->
     <link href="{{ url_for('static', filename='style.css') }}" rel="stylesheet">
-    <!-- Favicon (Optional, add a generic one) -->
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛡️</text></svg>">
-
 </head>
 <body>
     <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark-accent sticky-top shadow-sm">
+    <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
         <div class="container">
-            <a class="navbar-brand" href="#">InfoGather Pro <i class="bi bi-shield-lock-fill ms-1 text-accent"></i></a>
+            <a class="navbar-brand" href="#">InfoGather Pro</a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
@@ -35,40 +32,38 @@
     </nav>
 
     <!-- Home Section -->
-    <section id="home-section" class="py-5 text-center bg-dark text-light">
+    <section id="home-section" class="py-5 text-center text-white">
         <div class="container">
-            <h1 class="display-4 fw-bold">Welcome to <span class="text-accent">InfoGather Pro</span></h1>
-            <p class="lead col-md-8 mx-auto">Your comprehensive tool for gathering essential cybersecurity intelligence on web targets.</p>
-            <a href="#scanner-section" class="btn btn-accent btn-lg mt-3">
-                <i class="bi bi-binoculars-fill me-2"></i>Start Scanning Now
-            </a>
+            <h1>Welcome to InfoGather Pro</h1>
+            <p class="lead">Your comprehensive tool for gathering essential cybersecurity intelligence on web targets.</p>
+            <a href="#scanner-section" class="btn btn-lg mt-3 scan-now-btn">Start Scanning Now</a>
         </div>
     </section>
 
     <!-- Scanner Section -->
     <section id="scanner-section" class="py-5">
         <div class="container py-4">
-            <h2 class="text-center mb-4 section-title">Web Target <span class="text-accent">Scanner</span></h2>
+            <h2 class="text-center mb-4 section-title">Web Target Scanner</h2>
             <div class="card main-card shadow-lg">
-                <div class="card-header bg-dark-accent text-white">
-                    <h4 class="mb-0"><i class="bi bi-search me-2"></i>Enter Target URL or Domain</h4>
+                <div class="card-header text-white">
+                    <h4 class="mb-0">Enter Target URL or Domain</h4>
                 </div>
                 <div class="card-body">
                     <p class="text-muted small mb-3">Enter a full URL (e.g., `https://example.com`) or just a domain name (e.g., `example.com`).</p>
                     <div class="input-group mb-4">
-                        <span class="input-group-text bg-secondary-subtle border-secondary-subtle"><i class="bi bi-link-45deg text-accent"></i></span>
+                        <span class="input-group-text"><i class="bi bi-link-45deg"></i></span>
                         <input type="text" id="urlInput" class="form-control form-control-lg" placeholder="e.g., example.com or https://example.com">
-                        <button class="btn btn-accent btn-lg" id="scanButton" onclick="startScan()">
+                        <button class="btn btn-lg" id="scanButton" onclick="startScan()">
                             <i class="bi bi-search me-2"></i>Scan
                         </button>
                     </div>
 
                     <!-- Loading Spinner -->
                     <div id="loadingSpinner" class="text-center d-none my-4">
-                        <div class="spinner-border text-accent" role="status" style="width: 3rem; height: 3rem;">
+                        <div class="spinner-border text-primary-glow" role="status" style="width: 3rem; height: 3rem;">
                             <span class="visually-hidden">Loading...</span>
                         </div>
-                        <p class="mt-2 text-light">Performing comprehensive scan... Please wait.</p>
+                        <p class="mt-2">Performing comprehensive scan... Please wait.</p>
                         <p class="text-muted small">(Checks include DNS, WHOIS, SMTP, Blacklists, etc. This can take some time)</p>
                     </div>
 
@@ -79,7 +74,7 @@
 
                      <!-- Results Section -->
                     <div id="resultsSection" class="d-none mt-4">
-                        <h3 class="mb-3 text-light">Scan Results for: <code id="scannedTarget" class="fs-5 text-accent-light"></code></h3>
+                        <h3 class="mb-3">Scan Results for: <code id="scannedTarget" class="fs-5"></code></h3>
                         <button class="btn btn-success mb-4" onclick="downloadResults()">
                             <i class="bi bi-download me-2"></i> Download Results as JSON
                         </button>
@@ -95,6 +90,21 @@
                                 <div id="collapseMetadata" class="accordion-collapse collapse show" aria-labelledby="headingMetadata" data-bs-parent="#scanResultsAccordion">
                                     <div class="accordion-body">
                                         <pre class="result-box"><code id="metadataResults"></code></pre>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Security Headers -->
+                            <div class="accordion-item">
+                                <h2 class="accordion-header" id="headingSecurityHeaders">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSecurityHeaders" aria-expanded="false" aria-controls="collapseSecurityHeaders">
+                                       <i class="bi bi-shield-check me-2"></i> HTTP Security Headers Check
+                                    </button>
+                                </h2>
+                                <div id="collapseSecurityHeaders" class="accordion-collapse collapse" aria-labelledby="headingSecurityHeaders" data-bs-parent="#scanResultsAccordion">
+                                    <div class="accordion-body">
+                                        <p class="small text-muted">Analysis of common HTTP security headers and their configurations.</p>
+                                        <pre class="result-box"><code id="securityHeadersResults"></code></pre>
                                     </div>
                                 </div>
                             </div>
@@ -142,7 +152,7 @@
                                 </div>
                             </div>
 
-                             <!-- SMTP Diagnostics (NEW) -->
+                             <!-- SMTP Diagnostics -->
                             <div class="accordion-item">
                                 <h2 class="accordion-header" id="headingSmtp">
                                     <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSmtp" aria-expanded="false" aria-controls="collapseSmtp">
@@ -152,12 +162,12 @@
                                 <div id="collapseSmtp" class="accordion-collapse collapse" aria-labelledby="headingSmtp" data-bs-parent="#scanResultsAccordion">
                                     <div class="accordion-body">
                                          <p class="small text-muted">Basic connection tests to mail servers listed in MX records.</p>
-                                         <pre class="result-box"><code id="smtpResults"></code></pre> <!-- New ID -->
+                                         <pre class="result-box"><code id="smtpResults"></code></pre>
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- Blacklist Checks (NEW) -->
+                            <!-- Blacklist Checks -->
                             <div class="accordion-item">
                                 <h2 class="accordion-header" id="headingBlacklist">
                                     <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseBlacklist" aria-expanded="false" aria-controls="collapseBlacklist">
@@ -167,7 +177,7 @@
                                 <div id="collapseBlacklist" class="accordion-collapse collapse" aria-labelledby="headingBlacklist" data-bs-parent="#scanResultsAccordion">
                                     <div class="accordion-body">
                                          <p class="small text-muted">Checks domain/mail server IPs against common DNS-based blacklists.</p>
-                                         <pre class="result-box"><code id="blacklistResults"></code></pre> <!-- New ID -->
+                                         <pre class="result-box"><code id="blacklistResults"></code></pre>
                                     </div>
                                 </div>
                             </div>
@@ -180,53 +190,56 @@
     </section>
 
     <!-- Features Section (formerly Services) -->
-    <section id="services-section" class="py-5 bg-dark-soft">
+    <section id="services-section" class="py-5">
         <div class="container">
-            <h2 class="text-center mb-5 section-title">Tool <span class="text-accent">Features</span></h2>
+            <h2 class="text-center mb-4 section-title">Tool Features</h2>
             <div class="row text-center">
-                <!-- Updated Features -->
+                <!-- Features -->
                 <div class="col-md-4 col-lg-2 mb-4">
-                    <div class="card h-100 feature-card"> <div class="card-body d-flex flex-column justify-content-center align-items-center"> <i class="bi bi-card-text fs-1 text-accent mb-3"></i> <h5 class="card-title">Metadata</h5> <p class="card-text small text-muted">Website headers & tech.</p> </div> </div>
-                </div>
-                <div class="col-md-4 col-lg-2 mb-4">
-                    <div class="card h-100 feature-card"> <div class="card-body d-flex flex-column justify-content-center align-items-center"> <i class="bi bi-journal-richtext fs-1 text-accent-secondary mb-3"></i> <h5 class="card-title">DNS</h5> <p class="card-text small text-muted">A, MX, TXT, PTR, SPF, etc.</p> </div> </div>
+                    <div class="card h-100 feature-card"> <div class="card-body"> <i class="bi bi-card-text fs-1 mb-3"></i> <h5 class="card-title">Metadata</h5> <p class="card-text small">Website headers & tech.</p> </div> </div>
                 </div>
                 <div class="col-md-4 col-lg-2 mb-4">
-                    <div class="card h-100 feature-card"> <div class="card-body d-flex flex-column justify-content-center align-items-center"> <i class="bi bi-person-vcard fs-1 text-accent mb-3"></i> <h5 class="card-title">WHOIS</h5> <p class="card-text small text-muted">Domain registration info.</p> </div> </div>
+                    <div class="card h-100 feature-card"> <div class="card-body"> <i class="bi bi-shield-check fs-1 mb-3"></i> <h5 class="card-title">Sec Headers</h5> <p class="card-text small">HTTP security header check.</p> </div> </div>
+                </div>
+                <div class="col-md-4 col-lg-2 mb-4">
+                    <div class="card h-100 feature-card"> <div class="card-body"> <i class="bi bi-journal-richtext fs-1 mb-3"></i> <h5 class="card-title">DNS</h5> <p class="card-text small">A, MX, TXT, PTR, SPF, etc.</p> </div> </div>
+                </div>
+                <div class="col-md-4 col-lg-2 mb-4">
+                    <div class="card h-100 feature-card"> <div class="card-body"> <i class="bi bi-person-vcard fs-1 mb-3"></i> <h5 class="card-title">WHOIS</h5> <p class="card-text small">Domain registration info.</p> </div> </div>
                 </div>
                  <div class="col-md-4 col-lg-2 mb-4">
-                    <div class="card h-100 feature-card"> <div class="card-body d-flex flex-column justify-content-center align-items-center"> <i class="bi bi-diagram-3 fs-1 text-accent-secondary mb-3"></i> <h5 class="card-title">Subdomains</h5> <p class="card-text small text-muted">Discovery via Cert Transp.</p> </div> </div>
+                    <div class="card h-100 feature-card"> <div class="card-body"> <i class="bi bi-diagram-3 fs-1 mb-3"></i> <h5 class="card-title">Subdomains</h5> <p class="card-text small">Discovery via Cert Transp.</p> </div> </div>
                 </div>
                  <div class="col-md-4 col-lg-2 mb-4">
-                    <div class="card h-100 feature-card"> <div class="card-body d-flex flex-column justify-content-center align-items-center"> <i class="bi bi-envelope-check fs-1 text-accent mb-3"></i> <h5 class="card-title">SMTP Test</h5> <p class="card-text small text-muted">Mail server connection checks.</p> </div> </div>
+                    <div class="card h-100 feature-card"> <div class="card-body"> <i class="bi bi-envelope-check fs-1 mb-3"></i> <h5 class="card-title">SMTP Test</h5> <p class="card-text small">Mail server connection checks.</p> </div> </div>
                 </div>
                  <div class="col-md-4 col-lg-2 mb-4">
-                    <div class="card h-100 feature-card"> <div class="card-body d-flex flex-column justify-content-center align-items-center"> <i class="bi bi-shield-slash fs-1 text-accent-secondary mb-3"></i> <h5 class="card-title">Blacklist</h5> <p class="card-text small text-muted">Checks IPs against DNSBLs.</p> </div> </div>
+                    <div class="card h-100 feature-card"> <div class="card-body"> <i class="bi bi-shield-slash fs-1 mb-3"></i> <h5 class="card-title">Blacklist</h5> <p class="card-text small">Checks IPs against DNSBLs.</p> </div> </div>
                 </div>
             </div>
         </div>
     </section>
 
     <!-- About Us Section -->
-    <section id="about-us-section" class="py-5 bg-dark text-light">
+    <section id="about-us-section" class="py-5">
         <div class="container text-center">
-            <h2 class="mb-4 section-title">About <span class="text-accent">InfoGather Pro</span></h2>
+            <h2 class="mb-4 section-title">About InfoGather Pro</h2>
             <p class="lead col-md-8 mx-auto">This tool is a demonstration project designed to aggregate publicly available information about web targets. It utilizes various open-source libraries and techniques for reconnaissance purposes. Remember to use this tool responsibly and ethically.</p>
         </div>
     </section>
 
     <!-- Contact Us Section -->
-    <section id="contact-us-section" class="py-5 bg-dark-soft">
+    <section id="contact-us-section" class="py-5">
         <div class="container">
-            <h2 class="text-center mb-4 section-title">Contact <span class="text-accent">Us</span> (Placeholder)</h2>
+            <h2 class="text-center mb-4 section-title">Contact Us (Placeholder)</h2>
              <p class="text-center text-muted mb-4">This is a placeholder contact form.</p>
             <div class="row">
                 <div class="col-md-8 col-lg-6 mx-auto">
-                    <form>
+                    <form class="contact-form">
                         <div class="mb-3"> <label for="contactName" class="form-label">Name</label> <input type="text" class="form-control" id="contactName" required> </div>
                         <div class="mb-3"> <label for="contactEmail" class="form-label">Email</label> <input type="email" class="form-control" id="contactEmail" required> </div>
                         <div class="mb-3"> <label for="contactMessage" class="form-label">Message</label> <textarea class="form-control" id="contactMessage" rows="4" required></textarea> </div>
-                        <button type="submit" class="btn btn-accent w-100">Send Message</button>
+                        <button type="submit" class="btn w-100">Send Message</button>
                     </form>
                 </div>
             </div>
@@ -234,7 +247,7 @@
     </section>
 
     <!-- Footer -->
-     <footer class="py-4 bg-dark-accent text-white text-center">
+     <footer class="py-4 text-white text-center">
         <div class="container">
             <p class="mb-0">© 2024 InfoGather Pro. For educational purposes only.</p>
         </div>
@@ -243,7 +256,6 @@
     <!-- Bootstrap JS Bundle -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
     <!-- Custom JS - Use url_for -->
-    <!-- *** IMPORTANT: Ensure this script tag is at the END of the body OR has 'defer' attribute if in head *** -->
     <script src="{{ url_for('static', filename='script.js') }}" defer></script>
 </body>
 </html>
