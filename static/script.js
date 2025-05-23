@@ -1,4 +1,4 @@
-// Global variable to hold the results for download
+// static/script.js
 let scanResultsData = null;
 
 // DOM Elements
@@ -12,6 +12,7 @@ const scannedTarget = document.getElementById('scannedTarget');
 
 // Result display elements
 const metadataResultsEl = document.getElementById('metadataResults');
+const securityHeadersResultsEl = document.getElementById('securityHeadersResults'); // For Security Headers
 const dnsResultsEl = document.getElementById('dnsResults');
 const whoisResultsEl = document.getElementById('whoisResults');
 const subdomainsResultsEl = document.getElementById('subdomainsResults');
@@ -30,14 +31,12 @@ async function startScan() {
         return;
     }
 
-    // Simplified regex: backend handles more robust validation
     const basicUrlOrDomainRegex = /^(?:https?:\/\/)?(?:[^@\/\n]+@)?(?:www\.)?([^:\/\n?]+)/i;
     if (!basicUrlOrDomainRegex.test(urlValue)) {
          showError('Invalid format. Please enter a valid URL or domain name.');
          return;
     }
 
-    // UI Reset
     hideError();
     resultsSection.classList.add('d-none');
     loadingSpinner.classList.remove('d-none');
@@ -46,7 +45,6 @@ async function startScan() {
     scanResultsData = null;
 
     try {
-        // API Call
         const response = await fetch('/scan', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
@@ -59,7 +57,6 @@ async function startScan() {
             throw new Error(errorMsg);
         }
 
-        // Process Success
         scanResultsData = result;
         displayResults(scanResultsData);
         resultsSection.classList.remove('d-none');
@@ -70,7 +67,6 @@ async function startScan() {
         resultsSection.classList.add('d-none');
 
     } finally {
-        // Cleanup UI
         loadingSpinner.classList.add('d-none');
         scanButton.disabled = false;
         scanButton.innerHTML = '<i class="bi bi-search me-2"></i>Scan';
@@ -85,22 +81,33 @@ function displayResults(results) {
     scannedTarget.textContent = results.target_url || results.target_domain || 'N/A';
 
     metadataResultsEl.textContent = formatResult(results.metadata);
-    dnsResultsEl.textContent = formatResult(results.dns_records);
+    securityHeadersResultsEl.textContent = formatSecurityHeadersResult(results.security_headers);
+    dnsResultsEl.textContent = formatResult(results.dns_records); 
     whoisResultsEl.textContent = formatResult(results.whois);
     subdomainsResultsEl.textContent = formatSubdomainResult(results.subdomains);
-    smtpResultsEl.textContent = formatSmtpResult(results.smtp_diagnostics);
+    smtpResultsEl.textContent = formatSmtpResult(results.smtp_diagnostics); 
     blacklistResultsEl.textContent = formatBlacklistResult(results.blacklist_checks);
 
-     const firstAccordionButton = document.querySelector('#scanResultsAccordion .accordion-button');
-     const firstAccordionCollapse = document.querySelector('#scanResultsAccordion .accordion-collapse');
-     if (firstAccordionButton && firstAccordionCollapse) {
-         if (!firstAccordionCollapse.classList.contains('show')) {
-            new bootstrap.Collapse(firstAccordionCollapse).show(); // Use Bootstrap's JS API
-         }
-         // Ensure all other sections start collapsed
-         const otherCollapses = document.querySelectorAll('#scanResultsAccordion .accordion-item:not(:first-child) .accordion-collapse.show');
-         otherCollapses.forEach(col => new bootstrap.Collapse(col).hide());
-     }
+    // Ensure first accordion (metadata) is open, others closed on new results
+    const firstAccordionItem = document.querySelector('#scanResultsAccordion .accordion-item:first-child');
+    if (firstAccordionItem) {
+        const firstAccordionCollapseEl = firstAccordionItem.querySelector('.accordion-collapse');
+        if (firstAccordionCollapseEl) {
+            const firstBsCollapse = bootstrap.Collapse.getOrCreateInstance(firstAccordionCollapseEl);
+            if (!firstAccordionCollapseEl.classList.contains('show')) {
+                firstBsCollapse.show();
+            }
+        }
+    }
+    
+    const otherAccordionItems = document.querySelectorAll('#scanResultsAccordion .accordion-item:not(:first-child)');
+    otherAccordionItems.forEach(item => {
+        const collapseEl = item.querySelector('.accordion-collapse');
+        if (collapseEl && collapseEl.classList.contains('show')) {
+            const bsCollapse = bootstrap.Collapse.getOrCreateInstance(collapseEl);
+            bsCollapse.hide();
+        }
+    });
 }
 
 /**
@@ -148,7 +155,7 @@ function formatSubdomainResult(subData) {
     output += `\n--- Discovered Subdomains ---\n`;
     if (subData.subdomains && Array.isArray(subData.subdomains) && subData.subdomains.length > 0) {
         const actualSubdomains = subData.subdomains.filter(s => !s.toLowerCase().includes("no subdomains found"));
-        if (actualSubdomains.length === 0 && subData.subdomains.length > 0) { // Case: only "no subdomains" messages
+        if (actualSubdomains.length === 0 && subData.subdomains.length > 0) { 
             output += subData.subdomains[0] + '\n';
         } else if (actualSubdomains.length > 0) {
             output += actualSubdomains.join('\n') + '\n';
@@ -158,6 +165,59 @@ function formatSubdomainResult(subData) {
     } else { output += "No subdomains list available or list is empty.\n"; }
     return output;
 }
+
+/**
+ * Formats the Security Headers check result object for display.
+ */
+function formatSecurityHeadersResult(secData) {
+    if (!secData || typeof secData !== 'object') return 'Invalid Security Headers result data received.';
+    if (secData.hasOwnProperty('error')) return `Error: ${secData.error}`;
+    // If only 'info' key, it's likely a skip message
+    if (secData.hasOwnProperty('info') && Object.keys(secData).length === 1) {
+         return `Info: ${secData.info}`;
+    }
+
+    let output = "--- HTTP Security Headers Analysis ---\n";
+    output += `Overall: ${secData.info || 'Analysis complete.'}\n`;
+
+    output += "\n--- Present Headers (+) ---\n";
+    if (secData.present && secData.present.length > 0 && !secData.present[0].toLowerCase().includes("none of the commonly checked")) {
+        output += secData.present.map(h => `  ${h}`).join('\n') + '\n';
+    } else if (secData.present && secData.present.length > 0) {
+        output += `  ${secData.present[0]}\n`; // Display "None of the commonly checked..."
+    } else {
+        output += "  (No data on present headers)\n";
+    }
+
+    output += "\n--- Missing Headers (-) ---\n";
+    if (secData.missing && secData.missing.length > 0 && !secData.missing[0].toLowerCase().includes("no commonly checked")) {
+        output += secData.missing.map(h => `  ${h}`).join('\n') + '\n';
+    } else if (secData.missing && secData.missing.length > 0) {
+        output += `  ${secData.missing[0]}\n`; // Display "No commonly checked..."
+    } else {
+        output += "  (No data on missing headers)\n";
+    }
+
+    output += "\n--- Configuration Warnings/Observations (!) ---\n";
+    if (secData.warnings && secData.warnings.length > 0 && !secData.warnings[0].toLowerCase().includes("no specific configuration warnings")) {
+        output += secData.warnings.map(w => `  ${w}`).join('\n') + '\n';
+    } else if (secData.warnings && secData.warnings.length > 0) {
+        output += `  ${secData.warnings[0]}\n`; // Display "No specific..."
+    } else {
+        output += "  (No data on warnings)\n";
+    }
+
+    output += "\n--- Recommendations (*) ---\n";
+    if (secData.recommendations && secData.recommendations.length > 0 && !secData.recommendations[0].toLowerCase().includes("no immediate recommendations")) {
+        output += secData.recommendations.map(r => `  ${r}`).join('\n') + '\n';
+    } else if (secData.recommendations && secData.recommendations.length > 0) {
+         output += `  ${secData.recommendations[0]}\n`; // Display "No immediate..."
+    } else {
+        output += "  (No data on recommendations)\n";
+    }
+    return output;
+}
+
 
 /**
  * Formats the SMTP diagnostics result object for display.
@@ -186,9 +246,9 @@ function formatSmtpResult(smtpData) {
              const actualErrors = result.errors.filter(e => !e.toLowerCase().includes("no errors encountered"));
              if (actualErrors.length > 0) {
                  output += actualErrors.map(e => `    - ${e}`).join('\n') + '\n';
-             } else if (result.errors.length > 0) { // Show "no errors encountered" if it's the only message
+             } else if (result.errors.length > 0) {
                  output += `    - ${result.errors[0]}\n`;
-             } else { // Should not happen if array has items but filter is empty and length > 0 fails
+             } else { // Should not be reached if the backend adds "No errors..."
                 output += "    - No specific errors recorded.\n";
              }
         } else {
@@ -212,10 +272,13 @@ function formatBlacklistResult(blData) {
     output += "\n--- Summary ---\n";
     if (blData.summary && typeof blData.summary === 'object') {
         output += `IPs Checked: ${blData.summary.ips_checked || 0}\n`;
-        output += `Blacklists Queried: ${blData.summary.blacklists_queried || 0}\n`;
+        output += `Blacklists Queried (per IPv4): ${blData.summary.blacklists_queried_per_ipv4 || 0}\n`;
         output += `Listings Found: ${blData.summary.listings_found || 0}\n`;
         output += `Timeouts During Check: ${blData.summary.timeouts || 0}\n`;
         output += `Errors During Check: ${blData.summary.errors || 0}\n`;
+        if (blData.summary.ipv6_checks_skipped_unsupported > 0) {
+            output += `IPv6 DNSBL Checks Skipped/Unsupported: ${blData.summary.ipv6_checks_skipped_unsupported}\n (Note: IPv6 DNSBL lookups require specific reversal not fully implemented here)\n`
+        }
     } else {
         output += "No summary available.\n";
     }
@@ -229,6 +292,7 @@ function formatBlacklistResult(blData) {
             let timeouts = [];
             let notListedCount = 0;
             let checkedCount = 0;
+            let ipv6UnsupportedOnThisIp = false;
 
             if (blData.details[ip] && typeof blData.details[ip] === 'object') {
                 checkedCount = Object.keys(blData.details[ip]).length;
@@ -240,35 +304,40 @@ function formatBlacklistResult(blData) {
                          timeouts.push(dnsbl);
                     } else if (result === false) {
                         notListedCount++;
-                    } else {
+                    } else if (result === "IPv6 Not Supported Yet") {
+                        ipv6UnsupportedOnThisIp = true; 
+                        // Don't list individual unsupported, summary handles it.
+                    } else { // Error string
                         errored.push(`${dnsbl} (${result})`);
                     }
                 }
             }
+            
+            if (ipv6UnsupportedOnThisIp && ip.includes(':')) { // Check if it's an IPv6 address
+                 output += `  DNSBL checks for this IPv6 address are currently not fully supported.\n`;
+            } else { // For IPv4 or if IPv6 support was attempted and had other results
+                if (listedOn.length > 0) {
+                     output += `  LISTED on: ${listedOn.join(', ')}\n`;
+                } else if (checkedCount > 0 && timeouts.length < checkedCount && errored.length < checkedCount && !ipv6UnsupportedOnThisIp){
+                     output += `  Not found on any queried blacklist where check succeeded.\n`;
+                } else if (checkedCount === 0) {
+                    output += `  No blacklist checks performed or reported for this IP.\n`;
+                }
 
-            if (listedOn.length > 0) {
-                 output += `  LISTED on: ${listedOn.join(', ')}\n`;
-            } else if (checkedCount > 0 && timeouts.length < checkedCount && errored.length < checkedCount){
-                 output += `  Not found on any queried blacklist where check succeeded.\n`;
-            } else if (checkedCount === 0) {
-                output += `  No blacklist checks performed or reported for this IP.\n`;
-            }
-
-
-             if (timeouts.length > 0) {
-                 output += `  Timeouts on: ${timeouts.join(', ')}\n`;
-            }
-             if (errored.length > 0) {
-                 output += `  Errors on: ${errored.join(', ')}\n`;
-            }
-            if (checkedCount > 0) {
-                 output += `  (Checked ${checkedCount} lists for this IP: ${notListedCount} clean, ${listedOn.length} listed, ${timeouts.length} timeouts, ${errored.length} errors)\n`;
+                 if (timeouts.length > 0) {
+                     output += `  Timeouts on: ${timeouts.join(', ')}\n`;
+                }
+                 if (errored.length > 0) {
+                     output += `  Errors on: ${errored.join(', ')}\n`;
+                }
+                if (checkedCount > 0 && !ipv6UnsupportedOnThisIp) {
+                     output += `  (Checked ${checkedCount} lists for this IP: ${notListedCount} clean, ${listedOn.length} listed, ${timeouts.length} timeouts, ${errored.length} errors)\n`;
+                }
             }
         }
     } else {
         output += "No detailed IP results available (or no IPs were checked).\n";
     }
-
     return output;
 }
 
@@ -327,12 +396,6 @@ if (urlInput) {
     urlInput.addEventListener('input', hideError);
 }
 
-if (scanButton) {
-    // The onclick attribute is already set in HTML, but if you prefer JS-only:
-    // scanButton.addEventListener('click', startScan);
-}
-
-// Smooth scrolling for navbar links
 document.querySelectorAll('nav a[href^="#"]').forEach(anchor => {
     anchor.addEventListener('click', function (e) {
         e.preventDefault();
